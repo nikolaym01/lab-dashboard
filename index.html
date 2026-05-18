@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratorium — Продажи 2026 · Review V6</title>
+<title>Laboratorium — Продажи 2026 · Review V6.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
@@ -19,14 +19,16 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
 .logo{font-family:'Unbounded',sans-serif;font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;margin-bottom:4px;font-weight:700}
 .title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:300}.title span{color:var(--accent);font-weight:700}
 .meta{text-align:right;color:var(--dim);font-size:11px;line-height:1.8}.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px}
-.btn{background:transparent;border:1px solid var(--border);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;letter-spacing:.06em}.btn:hover,.btn.active{border-color:var(--accent);color:var(--text);background:rgba(200,240,96,.08)}.btn.primary{background:#2563eb;border-color:#3b82f6;color:white}.btn.small{padding:6px 10px;font-size:10px}
+.btn{background:transparent;border:1px solid var(--border);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;letter-spacing:.06em}.btn:hover,.btn.active{border-color:var(--accent);color:var(--text);background:rgba(200,240,96,.08)}.btn.scope-active{border-color:var(--border);color:var(--text);background:rgba(255,255,255,.055)}.btn.primary{background:#2563eb;border-color:#3b82f6;color:white}.btn.small{padding:6px 10px;font-size:10px}
 .main{padding:16px 24px 28px}.error{display:none;margin-bottom:14px;padding:12px 16px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.08);color:var(--red);line-height:1.6}
 .grid-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:14px;margin-bottom:14px;align-items:stretch}.grid-bottom{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);gap:14px;margin-bottom:10px;align-items:stretch}
 .card{background:linear-gradient(180deg,rgba(17,22,32,.98),rgba(12,16,24,.98));border:1px solid var(--border);border-radius:4px;padding:15px;box-shadow:0 12px 28px rgba(0,0,0,.18);min-width:0;overflow:hidden}
-.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:7px}.card-title{font-family:'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:700;color:var(--text)}.card-sub{font-size:11px;color:rgba(235,240,255,.72);margin-top:4px;font-weight:500;letter-spacing:.01em}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.filter-line{padding:12px 18px;margin-top:12px;display:flex;gap:16px;align-items:center;color:var(--dim);font-size:12px}.link{color:#3b82f6;cursor:pointer}.link:hover{text-decoration:underline}.ch-main{height:clamp(245px,30vh,290px);position:relative}.ch-pie{height:clamp(245px,30vh,290px);position:relative}.ch-main canvas,.ch-pie canvas{display:block;width:100%!important;height:100%!important}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:7px}.card-title{font-family:'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:700;color:var(--text)}.card-sub{font-size:11px;color:rgba(235,240,255,.72);margin-top:4px;font-weight:500;letter-spacing:.01em;line-height:1.35}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dashboard-controls{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin:0 0 14px 0;flex-wrap:wrap}
+.control-label{color:var(--dim);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-right:4px}.filter-line{padding:12px 18px;margin-top:12px;display:flex;gap:16px;align-items:center;color:var(--dim);font-size:12px}.link{color:#3b82f6;cursor:pointer}.link:hover{text-decoration:underline}.ch-main{height:clamp(245px,30vh,290px);position:relative}.ch-pie{height:clamp(245px,30vh,290px);position:relative}.ch-main canvas,.ch-pie canvas{display:block;width:100%!important;height:100%!important}
 .tbl-wrap{overflow:auto}.matrix{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}.matrix th,.matrix td{padding:11px 10px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.matrix th{background:#151b27;color:var(--dim);font-weight:500;font-size:11px}.matrix th:first-child,.matrix td:first-child{text-align:left;position:sticky;left:0;background:#111722;z-index:2}.matrix thead th:first-child{z-index:3}.matrix th.ytd,.matrix td.ytd{background:#192031;color:var(--text);font-weight:700}.matrix .active{outline:1px solid #2f81f7;outline-offset:-1px;background:rgba(47,129,247,.12)!important}.matrix .future{color:#5a6374}.pos{color:var(--green)!important}.neg{color:var(--red)!important}.neu{color:var(--dim)!important}.heat-pos{background:linear-gradient(90deg,rgba(115,214,99,.18),rgba(115,214,99,.04))}.heat-neg{background:linear-gradient(90deg,rgba(255,107,107,.20),rgba(255,107,107,.04))}
 .channels{width:100%;border-collapse:collapse;font-size:12px}.channels th{color:var(--dim);font-weight:500;text-align:right;padding:10px;border-bottom:1px solid var(--border)}.channels th:first-child{text-align:left}.channels td{padding:13px 10px;border-bottom:1px solid var(--border);text-align:right}.channels td:first-child{text-align:left;color:var(--text);font-weight:600;letter-spacing:.01em}.bar{height:6px;background:#252b38;border-radius:10px;overflow:hidden;min-width:85px}.fill{height:100%;border-radius:10px}.cell-flex{display:flex;align-items:center;gap:8px;justify-content:flex-end}.total-row td{font-weight:700;color:var(--text);border-bottom:none;padding-top:16px}.footer-actions{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:12px}.legend-note{color:var(--muted);font-size:11px}.hide-mobile{display:table-cell}
-@media(max-width:1100px){.grid-top,.grid-bottom{grid-template-columns:1fr}.ch-main,.ch-pie{height:260px}.header{padding:14px 18px}.main{padding:14px}.hide-mobile{display:none}}
+@media(max-width:1100px){.grid-top,.grid-bottom{grid-template-columns:1fr}.dashboard-controls{justify-content:flex-start}.ch-main,.ch-pie{height:260px}.header{padding:14px 18px}.main{padding:14px}.hide-mobile{display:none}}
 @media print{.header,.footer-actions,.controls,.filter-line{display:none}.main{padding:0}.card{break-inside:avoid;box-shadow:none}.grid-top,.grid-bottom{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -37,11 +39,19 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
 </header>
 <main class="main">
   <div id="err" class="error"></div>
+  <div class="dashboard-controls">
+    <span class="control-label">Фильтр</span>
+    <button id="preset-all" class="btn" onclick="setPreset('all')">Все</button>
+    <button id="preset-op" class="btn" onclick="setPreset('op')">ОП</button>
+    <button id="preset-mp" class="btn" onclick="setPreset('mp')">МП</button>
+    <button id="btn-all-months" class="btn" onclick="setMonth(null)">Все месяцы</button>
+    <button id="btn-reset" class="btn" onclick="resetFilters()">Сброс</button>
+  </div>
   <section class="grid-top">
     <div class="card">
       <div class="card-head">
         <div><div class="card-title">Факт vs План — помесячно (млн ₽)</div><div class="card-sub" id="main-sub">Клик по месяцу → фильтр всех графиков и таблицы</div></div>
-        <div class="controls"><button id="preset-all" class="btn" onclick="setPreset(\'all\')">Все</button><button id="preset-op" class="btn" onclick="setPreset(\'op\')">ОП</button><button id="preset-mp" class="btn" onclick="setPreset(\'mp\')">МП</button><button id="btn-all-months" class="btn" onclick="setMonth(null)">Все месяцы</button><button id="btn-reset" class="btn" onclick="resetFilters()">Сброс</button></div>
+        
       </div>
       <div class="ch-main"><canvas id="c-main"></canvas></div>
     </div>
@@ -52,7 +62,7 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
   </section>
   <section class="grid-bottom">
     <div class="card">
-      <div class="card-head"><div><div class="card-title">Показатели по месяцам</div><div class="card-sub">Отклонение и выполнение читаются быстрее, чем два нижних графика. Да, таблица победила графики, бывает.</div></div><div class="card-sub" id="matrix-hint">Клик по месяцу → фильтр</div></div>
+      <div class="card-head"><div><div class="card-title">Показатели по месяцам</div><div class="card-sub">План, факт, отклонение, выполнение, YoY и доля в структуре.</div></div><div class="card-sub" id="matrix-hint">Клик по месяцу → фильтр</div></div>
       <div id="matrix" class="tbl-wrap"></div>
     </div>
     <div class="card">
@@ -95,9 +105,13 @@ function setChannel(k){
   renderAll();
 }
 function setPreset(preset){
-  if(preset==='all') activeChannels=[];
-  if(preset==='op') activeChannels=['ks','stm','reg'];
-  if(preset==='mp') activeChannels=['mp'];
+  if(preset==='all'){
+    activeChannels=[];
+  }else if(preset==='op'){
+    activeChannels=['ks','stm','reg'];
+  }else if(preset==='mp'){
+    activeChannels=['mp'];
+  }
   renderAll();
 }
 function resetFilters(){activeMonth=null;activeChannels=[];renderAll()}
@@ -114,10 +128,13 @@ function channelLabel(){
   if(activeChannels.length===1 && activeChannels[0]==='mp') return 'МП';
   return activeChannels.map(k=>CH[k].label).join(' + ');
 }
+function sameChannels(a,b){
+  return a.length===b.length && b.every(k=>a.includes(k));
+}
 function isPreset(p){
   if(p==='all') return activeChannels.length===0;
-  if(p==='op') return activeChannels.length===3 && activeChannels.includes('ks') && activeChannels.includes('stm') && activeChannels.includes('reg');
-  if(p==='mp') return activeChannels.length===1 && activeChannels[0]==='mp';
+  if(p==='op') return sameChannels(activeChannels,['ks','stm','reg']);
+  if(p==='mp') return sameChannels(activeChannels,['mp']);
   return false;
 }
 function renderState(){
@@ -127,12 +144,20 @@ const presetAll=document.getElementById('preset-all');
 const presetOp=document.getElementById('preset-op');
 const presetMp=document.getElementById('preset-mp');
 
-[btnMonths,btnReset,presetAll,presetOp,presetMp].forEach(b=>b&&b.classList.remove('active'));
+[btnMonths,btnReset,presetAll,presetOp,presetMp].forEach(b=>{
+  if(!b) return;
+  b.classList.remove('active');
+  b.classList.remove('scope-active');
+});
 
-if(isPreset('all')) presetAll.classList.add('active');
-if(isPreset('op')) presetOp.classList.add('active');
-if(isPreset('mp')) presetMp.classList.add('active');
+// Scope selectors: soft active state only for meaningful non-default scopes.
+// "Все" is not highlighted by default, because it behaves as scope reset.
+if(isPreset('op')) presetOp.classList.add('scope-active');
+if(isPreset('mp')) presetMp.classList.add('scope-active');
 
+// Reset affordance logic:
+// "Все месяцы" lights up only when it can reset month filter.
+// "Сброс" lights up when anything is filtered.
 if(activeMonth!==null){
   btnMonths.classList.add('active');
   btnReset.classList.add('active');
