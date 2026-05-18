@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratorium — Продажи 2026 · Review V4</title>
+<title>Laboratorium — Продажи 2026 · Review V6</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
@@ -41,7 +41,7 @@ body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospa
     <div class="card">
       <div class="card-head">
         <div><div class="card-title">Факт vs План — помесячно (млн ₽)</div><div class="card-sub" id="main-sub">Клик по месяцу → фильтр всех графиков и таблицы</div></div>
-        <div class="controls"><button id="btn-all-months" class="btn active" onclick="setMonth(null)">Все месяцы</button><button class="btn" onclick="resetFilters()">Сброс</button></div>
+        <div class="controls"><button id="preset-all" class="btn" onclick="setPreset(\'all\')">Все</button><button id="preset-op" class="btn" onclick="setPreset(\'op\')">ОП</button><button id="preset-mp" class="btn" onclick="setPreset(\'mp\')">МП</button><button id="btn-all-months" class="btn" onclick="setMonth(null)">Все месяцы</button><button id="btn-reset" class="btn" onclick="resetFilters()">Сброс</button></div>
       </div>
       <div class="ch-main"><canvas id="c-main"></canvas></div>
     </div>
@@ -71,13 +71,13 @@ const MO=['янв','фев','мар','апр','май','июн','июл','авг
 const MO_FULL=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const CH={ks:{label:'ФС / КС',color:'#c8f060'},stm:{label:'СТМ',color:'#60c8f0'},reg:{label:'Регионы / Опт',color:'#a78bfa'},mp:{label:'Маркетплейсы',color:'#f0a030'}};
 const KEYS=['ks','stm','reg','mp'];
-let D=null, charts={}, activeMonth=null, activeChannel=null;
-async function loadData(){try{setStatus('Загрузка...');const [plan,fact,f25]=await Promise.all([csv('plan'),csv('fact'),csv('fact_2025')]);D={plan:parse(plan),fact:parse(fact),f25:parse(f25)};activeMonth=null;activeChannel=null;renderAll();setStatus('Данные актуальны');document.getElementById('st-time').textContent='Обновлено: '+new Date().toLocaleString('ru',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});document.getElementById('err').style.display='none'}catch(e){setStatus('Ошибка');const el=document.getElementById('err');el.style.display='block';el.innerHTML='<b>'+e.message+'</b><br>Проверь доступ к Google Sheet: все у кого есть ссылка → читатель.'}}
+let D=null, charts={}, activeMonth=null, activeChannels=[];
+async function loadData(){try{setStatus('Загрузка...');const [plan,fact,f25]=await Promise.all([csv('plan'),csv('fact'),csv('fact_2025')]);D={plan:parse(plan),fact:parse(fact),f25:parse(f25)};activeMonth=null;activeChannels=[];renderAll();setStatus('Данные актуальны');document.getElementById('st-time').textContent='Обновлено: '+new Date().toLocaleString('ru',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});document.getElementById('err').style.display='none'}catch(e){setStatus('Ошибка');const el=document.getElementById('err');el.style.display='block';el.innerHTML='<b>'+e.message+'</b><br>Проверь доступ к Google Sheet: все у кого есть ссылка → читатель.'}}
 async function csv(sheet){const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;const r=await fetch(url);if(!r.ok)throw new Error(`Не удалось загрузить лист ${sheet}: ${r.status}`);return r.text()}
 function parse(text){const out={};for(const line of text.trim().split('\n')){const cols=[];let cur='',q=false;for(const ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){cols.push(cur.trim());cur=''}else cur+=ch}cols.push(cur.trim());const key=(cols[0]||'').toLowerCase().trim();if(!key||key==='канал')continue;out[key]=Array.from({length:12},(_,i)=>parseFloat((cols[i+1]||'0').replace(/[^\d.-]/g,''))||0)}return out}
 function setStatus(s){document.getElementById('st-label').textContent=s}
 function closed(){return Math.max(...KEYS.map(k=>(D.fact[k]||[]).filter(v=>v>0).length))}
-function keys(){return activeChannel?[activeChannel]:KEYS}
+function keys(){return activeChannels.length?activeChannels:KEYS}
 function sum(src,i,ks=keys()){return ks.reduce((a,k)=>a+(src[k]?.[i]||0),0)}
 function period(src,k){if(activeMonth!==null)return src[k]?.[activeMonth]||0;const n=closed();return (src[k]||[]).slice(0,n).reduce((a,b)=>a+b,0)}
 function allPeriod(src){return KEYS.reduce((a,k)=>a+period(src,k),0)}
@@ -86,8 +86,21 @@ function pct(v,d=0){return v===null||v===undefined||Number.isNaN(v)?'—':(v>=0?
 function exec(f,p){return p>0?f/p*100:null}function yoy(f,p){return p>0?(f/p-1)*100:null}
 function cls(v){return v>0?'pos':v<0?'neg':'neu'}function excls(v){return v===null?'neu':v>=100?'pos':v>=80?'neu':'neg'}function execColor(v){return v>=100?'#2f7d32':v>=80?'#b76516':'#c94141'}
 function setMonth(i){activeMonth=activeMonth===i?null:i;renderAll()}
-function setChannel(k){activeChannel=activeChannel===k?null:k;renderAll()}
-function resetFilters(){activeMonth=null;activeChannel=null;renderAll()}
+function setChannel(k){
+  if(activeChannels.length===1 && activeChannels[0]===k){
+    activeChannels=[];
+  }else{
+    activeChannels=[k];
+  }
+  renderAll();
+}
+function setPreset(preset){
+  if(preset==='all') activeChannels=[];
+  if(preset==='op') activeChannels=['ks','stm','reg'];
+  if(preset==='mp') activeChannels=['mp'];
+  renderAll();
+}
+function resetFilters(){activeMonth=null;activeChannels=[];renderAll()}
 function renderAll(){renderMain();renderPie();renderMatrix();renderChannels();renderState()}
 function setMainSub(i=null){
   const el=document.getElementById('main-sub');
@@ -95,24 +108,43 @@ function setMainSub(i=null){
   const ks=keys(), f=sum(D.fact,i,ks), p=sum(D.plan,i,ks), f25=sum(D.f25,i,ks), e=exec(f,p);
   el.textContent=`${MO_FULL[i]}: факт ${f?fmt(f,1):'—'} млн ₽ · план ${fmt(p,1)} млн ₽ · выполнение ${e?e.toFixed(0):'—'}% · 2025: ${f25?fmt(f25,1):'—'} млн ₽`;
 }
+function channelLabel(){
+  if(!activeChannels.length) return 'Все каналы';
+  if(activeChannels.length===3 && activeChannels.includes('ks') && activeChannels.includes('stm') && activeChannels.includes('reg')) return 'ОП';
+  if(activeChannels.length===1 && activeChannels[0]==='mp') return 'МП';
+  return activeChannels.map(k=>CH[k].label).join(' + ');
+}
+function isPreset(p){
+  if(p==='all') return activeChannels.length===0;
+  if(p==='op') return activeChannels.length===3 && activeChannels.includes('ks') && activeChannels.includes('stm') && activeChannels.includes('reg');
+  if(p==='mp') return activeChannels.length===1 && activeChannels[0]==='mp';
+  return false;
+}
 function renderState(){
 const btnMonths=document.getElementById('btn-all-months');
-const btnReset=document.querySelector('.controls .btn:last-child');
+const btnReset=document.getElementById('btn-reset');
+const presetAll=document.getElementById('preset-all');
+const presetOp=document.getElementById('preset-op');
+const presetMp=document.getElementById('preset-mp');
 
-btnMonths.classList.remove('active');
-btnReset.classList.remove('active');
+[btnMonths,btnReset,presetAll,presetOp,presetMp].forEach(b=>b&&b.classList.remove('active'));
+
+if(isPreset('all')) presetAll.classList.add('active');
+if(isPreset('op')) presetOp.classList.add('active');
+if(isPreset('mp')) presetMp.classList.add('active');
 
 if(activeMonth!==null){
   btnMonths.classList.add('active');
   btnReset.classList.add('active');
-}else if(activeChannel!==null){
+}else if(activeChannels.length){
   btnReset.classList.add('active');
 }
 
+const chLabel=channelLabel();
 document.getElementById('f-month').textContent=activeMonth===null?'Все месяцы':MO_FULL[activeMonth]+' 2026';
-document.getElementById('f-channel').textContent=activeChannel?CH[activeChannel].label:'Все каналы';
+document.getElementById('f-channel').textContent=chLabel;
 document.getElementById('pie-title').textContent=(activeMonth===null?'Структура YTD':'Структура '+MO_FULL[activeMonth])+' (факт)';
-document.getElementById('pie-sub').textContent=activeChannel?CH[activeChannel].label+' · клик ещё раз → сброс':'Клик по сегменту → фильтр канала';
+document.getElementById('pie-sub').textContent=activeChannels.length?chLabel+' · клик по сегменту → одиночный фильтр':'Клик по сегменту → фильтр канала';
 document.getElementById('channels-title').textContent=activeMonth===null?'Выполнение плана по каналам (YTD)':'Выполнение плана по каналам (месяц)';
 setMainSub(activeMonth)
 }
@@ -198,9 +230,9 @@ function renderMain(){
   })
 }
 
-function renderPie(){const ctx=document.getElementById('c-pie').getContext('2d');if(charts.pie)charts.pie.destroy();const vals=KEYS.map(k=>period(D.fact,k));const total=vals.reduce((a,b)=>a+b,0);charts.pie=new Chart(ctx,{type:'doughnut',data:{labels:KEYS.map(k=>CH[k].label),datasets:[{data:vals,backgroundColor:KEYS.map(k=>CH[k].color+'cc'),borderColor:KEYS.map(k=>activeChannel===k?'#fff':CH[k].color),borderWidth:KEYS.map(k=>activeChannel===k?2:1),hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',onClick:(evt)=>{const els=charts.pie.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);if(els.length)setChannel(KEYS[els[0].index])},plugins:{legend:{position:'bottom',labels:{color:'#a5adbd',font:{family:'JetBrains Mono',size:11},boxWidth:12,boxHeight:12}},tooltip:{backgroundColor:'#10141c',borderColor:'#2a3344',borderWidth:1,titleColor:'#fff',bodyColor:'#b6bdca',callbacks:{label:c=>` ${fmt(c.parsed,1)} млн ₽ · ${total?((c.parsed/total)*100).toFixed(0):0}%`}}}},plugins:[{id:'centerAndPct',afterDatasetsDraw(chart){const ctx=chart.ctx,meta=chart.getDatasetMeta(0),tot=chart.data.datasets[0].data.reduce((a,b)=>a+b,0);ctx.save();ctx.textAlign='center';ctx.fillStyle='#e7eaf0';ctx.font='700 24px Unbounded';ctx.fillText(fmt(tot,1),meta.data[0].x,meta.data[0].y-4);ctx.font='700 11px JetBrains Mono';ctx.fillStyle='#8b92a1';ctx.fillText('млн ₽',meta.data[0].x,meta.data[0].y+18);meta.data.forEach((arc,i)=>{const val=chart.data.datasets[0].data[i];if(!val||!tot)return;const p=val/tot*100;if(p<5)return;const a=(arc.startAngle+arc.endAngle)/2,r=(arc.outerRadius+arc.innerRadius)/2,x=arc.x+Math.cos(a)*r,y=arc.y+Math.sin(a)*r;ctx.font='bold 11px JetBrains Mono';ctx.fillStyle='rgba(0,0,0,.88)';ctx.fillText(p.toFixed(0)+'%',x,y)});ctx.restore()}}]})}
+function renderPie(){const ctx=document.getElementById('c-pie').getContext('2d');if(charts.pie)charts.pie.destroy();const vals=KEYS.map(k=>period(D.fact,k));const total=vals.reduce((a,b)=>a+b,0);charts.pie=new Chart(ctx,{type:'doughnut',data:{labels:KEYS.map(k=>CH[k].label),datasets:[{data:vals,backgroundColor:KEYS.map(k=>CH[k].color+'cc'),borderColor:KEYS.map(k=>activeChannels.includes(k)?'#fff':CH[k].color),borderWidth:KEYS.map(k=>activeChannels.includes(k)?2:1),hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',onClick:(evt)=>{const els=charts.pie.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);if(els.length)setChannel(KEYS[els[0].index])},plugins:{legend:{position:'bottom',labels:{color:'#a5adbd',font:{family:'JetBrains Mono',size:11},boxWidth:12,boxHeight:12}},tooltip:{backgroundColor:'#10141c',borderColor:'#2a3344',borderWidth:1,titleColor:'#fff',bodyColor:'#b6bdca',callbacks:{label:c=>` ${fmt(c.parsed,1)} млн ₽ · ${total?((c.parsed/total)*100).toFixed(0):0}%`}}}},plugins:[{id:'centerAndPct',afterDatasetsDraw(chart){const ctx=chart.ctx,meta=chart.getDatasetMeta(0),tot=chart.data.datasets[0].data.reduce((a,b)=>a+b,0);ctx.save();ctx.textAlign='center';ctx.fillStyle='#e7eaf0';ctx.font='700 24px Unbounded';ctx.fillText(fmt(tot,1),meta.data[0].x,meta.data[0].y-4);ctx.font='700 11px JetBrains Mono';ctx.fillStyle='#8b92a1';ctx.fillText('млн ₽',meta.data[0].x,meta.data[0].y+18);meta.data.forEach((arc,i)=>{const val=chart.data.datasets[0].data[i];if(!val||!tot)return;const p=val/tot*100;if(p<5)return;const a=(arc.startAngle+arc.endAngle)/2,r=(arc.outerRadius+arc.innerRadius)/2,x=arc.x+Math.cos(a)*r,y=arc.y+Math.sin(a)*r;ctx.font='bold 11px JetBrains Mono';ctx.fillStyle='rgba(0,0,0,.88)';ctx.fillText(p.toFixed(0)+'%',x,y)});ctx.restore()}}]})}
 function renderMatrix(){const n=closed();const ks=keys();const rows=[['План, млн ₽','plan'],['Факт, млн ₽','fact'],['Отклонение, млн ₽','gap'],['Выполнение плана, %','exec'],['YoY (к 2025), %','yoy'],['Доля в YTD факте, %','share']];let h='<table class="matrix"><thead><tr><th>Месяц</th>'+MO.map((m,i)=>`<th onclick="setMonth(${i})" class="${activeMonth===i?'active ':''}${i>=n?'future ':''}" style="cursor:pointer">${m}</th>`).join('')+'<th class="ytd">YTD</th></tr></thead><tbody>';for(const [label,id] of rows){h+=`<tr><td>${label}</td>`;let ytdPlan=0,ytdFact=0,ytd25=0;for(let i=0;i<12;i++){const pl=sum(D.plan,i,ks),fa=sum(D.fact,i,ks),p25=sum(D.f25,i,ks),isFuture=i>=n; if(i<n){ytdPlan+=pl;ytdFact+=fa;ytd25+=p25}let val='—',cl=isFuture?'future':'';if(id==='plan'){val=fmt(pl,1);cl+=' neu'}else if(id==='fact'){val=fa?fmt(fa,1):'—';cl+=' neu'}else if(id==='gap'){const g=fa-pl;val=fa?fmt(g,1):'—';cl+=' '+cls(g)+' '+(g>=0?'heat-pos':'heat-neg')}else if(id==='exec'){const e=fa?exec(fa,pl):null;val=e!==null?e.toFixed(0)+'%':'—';cl+=' '+excls(e)}else if(id==='yoy'){const y=fa&&p25?yoy(fa,p25):null;val=y!==null?(y>=0?'+':'')+y.toFixed(0)+'%':'—';cl+=' '+cls(y||0)}else{const totalAll=KEYS.reduce((a,k)=>a+(D.fact[k]?.[i]||0),0);const sh=fa&&totalAll?fa/totalAll*100:null;val=sh!==null?sh.toFixed(0)+'%':'—';cl+=' neu'}h+=`<td class="${cl} ${activeMonth===i?'active':''}">${val}</td>`}let ytd='—',ycl='ytd';if(id==='plan')ytd=fmt(ytdPlan,1);if(id==='fact')ytd=fmt(ytdFact,1);if(id==='gap'){const g=ytdFact-ytdPlan;ytd=fmt(g,1);ycl+=' '+cls(g)}if(id==='exec'){const e=exec(ytdFact,ytdPlan);ytd=e?e.toFixed(0)+'%':'—';ycl+=' '+excls(e)}if(id==='yoy'){const y=yoy(ytdFact,ytd25);ytd=y!==null?(y>=0?'+':'')+y.toFixed(0)+'%':'—';ycl+=' '+cls(y||0)}if(id==='share')ytd='100%';h+=`<td class="${ycl}">${ytd}</td></tr>`}h+='</tbody></table><div class="legend-note" style="margin-top:12px">YTD — накопительным итогом с начала года. YoY — сравнение с аналогичным месяцем 2025 года.</div>';document.getElementById('matrix').innerHTML=h}
-function renderChannels(){const n=closed();const totalFact=allPeriod(D.fact), totalPlan=allPeriod(D.plan);let h='<table class="channels"><thead><tr><th>Канал</th><th>Факт,<br>млн ₽</th><th>План,<br>млн ₽</th><th>Откл.,<br>млн ₽</th><th>Вып., %</th><th>Доля в<br>факте</th></tr></thead><tbody>';KEYS.forEach(k=>{const f=period(D.fact,k),p=period(D.plan,k),g=f-p,e=exec(f,p),sh=totalFact?f/totalFact*100:0;h+=`<tr onclick="setChannel('${k}')" style="cursor:pointer;${activeChannel===k?'background:rgba(255,255,255,.04)':''}"><td>${CH[k].label}</td><td><b>${fmt(f,1)}</b></td><td>${fmt(p,1)}</td><td class="${cls(g)}">${fmt(g,1)}</td><td><div class="cell-flex"><span class="${excls(e)}">${e?e.toFixed(0):'—'}%</span><div class="bar"><div class="fill" style="width:${Math.min(e||0,130)/1.3}%;background:${CH[k].color}"></div></div></div></td><td><b>${sh.toFixed(0)}%</b></td></tr>`});const gap=totalFact-totalPlan,e=exec(totalFact,totalPlan);h+=`<tr class="total-row"><td>ИТОГО</td><td>${fmt(totalFact,1)}</td><td>${fmt(totalPlan,1)}</td><td class="${cls(gap)}">${fmt(gap,1)}</td><td>${e?e.toFixed(0):'—'}%</td><td>100%</td></tr>`;h+='</tbody></table>';document.getElementById('channels').innerHTML=h}
+function renderChannels(){const n=closed();const totalFact=allPeriod(D.fact), totalPlan=allPeriod(D.plan);let h='<table class="channels"><thead><tr><th>Канал</th><th>Факт,<br>млн ₽</th><th>План,<br>млн ₽</th><th>Откл.,<br>млн ₽</th><th>Вып., %</th><th>Доля в<br>факте</th></tr></thead><tbody>';KEYS.forEach(k=>{const f=period(D.fact,k),p=period(D.plan,k),g=f-p,e=exec(f,p),sh=totalFact?f/totalFact*100:0;h+=`<tr onclick="setChannel('${k}')" style="cursor:pointer;${activeChannels.includes(k)?'background:rgba(255,255,255,.04)':''}"><td>${CH[k].label}</td><td><b>${fmt(f,1)}</b></td><td>${fmt(p,1)}</td><td class="${cls(g)}">${fmt(g,1)}</td><td><div class="cell-flex"><span class="${excls(e)}">${e?e.toFixed(0):'—'}%</span><div class="bar"><div class="fill" style="width:${Math.min(e||0,130)/1.3}%;background:${CH[k].color}"></div></div></div></td><td><b>${sh.toFixed(0)}%</b></td></tr>`});const gap=totalFact-totalPlan,e=exec(totalFact,totalPlan);h+=`<tr class="total-row"><td>ИТОГО</td><td>${fmt(totalFact,1)}</td><td>${fmt(totalPlan,1)}</td><td class="${cls(gap)}">${fmt(gap,1)}</td><td>${e?e.toFixed(0):'—'}%</td><td>100%</td></tr>`;h+='</tbody></table>';document.getElementById('channels').innerHTML=h}
 
 let resizeTimer=null;
 window.addEventListener('resize',()=>{
